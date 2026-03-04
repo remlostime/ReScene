@@ -3,6 +3,7 @@
 //  ReScene
 //
 
+import CoreLocation
 import Foundation
 
 /// Production implementation of `ReSceneAPIServiceProtocol`.

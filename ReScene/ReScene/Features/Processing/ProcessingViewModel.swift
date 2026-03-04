@@ -3,6 +3,7 @@
 //  ReScene
 //
 
+import Foundation
 import Observation
 
 /// Drives the processing screen's state during the AI remastering operation.

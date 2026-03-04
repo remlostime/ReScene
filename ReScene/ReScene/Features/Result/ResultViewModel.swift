@@ -3,6 +3,7 @@
 //  ReScene
 //
 
+import CoreLocation
 import Observation
 import UIKit
 

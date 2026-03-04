@@ -3,6 +3,7 @@
 //  ReScene
 //
 
+import CoreLocation
 import SwiftUI
 
 /// Displays the original photo alongside a 2x2 grid of AI-generated
