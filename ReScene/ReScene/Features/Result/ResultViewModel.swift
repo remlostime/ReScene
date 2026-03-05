@@ -7,24 +7,24 @@ import CoreLocation
 import Observation
 import UIKit
 
-/// Drives the result screen, exposing the original photo and four
-/// AI-generated remastered variants for display and selection.
+/// Drives the result screen, exposing the original photo and three
+/// AI-generated remastering options for display and selection.
 @Observable
 final class ResultViewModel {
 
     // MARK: - Published State
 
-    /// Index of the currently highlighted/selected remastered variant (0-3), if any.
-    var selectedVariantIndex: Int?
+    /// The option the user has tapped, if any.
+    var selectedOption: RemasterOption?
 
     // MARK: - Dependencies
 
-    private let result: RemasteredResult
+    private let result: AnalysisResult
     private let coordinator: AppCoordinator
 
     // MARK: - Init
 
-    init(result: RemasteredResult, coordinator: AppCoordinator) {
+    init(result: AnalysisResult, coordinator: AppCoordinator) {
         self.result = result
         self.coordinator = coordinator
     }
@@ -47,24 +47,20 @@ final class ResultViewModel {
         return nil
     }
 
-    /// The four remastered image URLs.
-    var remasteredURLs: [URL] {
-        result.remasteredImageURLs
-    }
-
-    /// The four style descriptions, index-aligned with URLs.
-    var styleDescriptions: [String] {
-        result.styleDescriptions
+    /// The three remastering options.
+    var options: [RemasterOption] {
+        result.options
     }
 
     // MARK: - Actions
 
-    /// Selects a specific remastered variant by index.
-    func selectVariant(at index: Int) {
-        selectedVariantIndex = index
+    /// Selects a remastering option by reference.
+    func selectOption(_ option: RemasterOption) {
+        selectedOption = option
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
-    /// Returns to the home screen to start a new remastering session.
+    /// Returns to the home screen to start a new session.
     func startOver() {
         coordinator.popToRoot()
     }

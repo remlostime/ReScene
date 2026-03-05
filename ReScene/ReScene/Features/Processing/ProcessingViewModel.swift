@@ -3,6 +3,7 @@
 //  ReScene
 //
 
+import CoreLocation
 import Foundation
 import Observation
 
@@ -84,8 +85,14 @@ final class ProcessingViewModel {
 
     // MARK: - Private
 
-    private func callAPI(with photo: PhotoData) async throws -> RemasteredResult {
-        try await apiService.remaster(photo: photo)
+    private func callAPI(with photo: PhotoData) async throws -> AnalysisResult {
+        let options = try await apiService.analyzeImage(
+            imageData: photo.imageData,
+            latitude: photo.coordinate?.latitude,
+            longitude: photo.coordinate?.longitude,
+            locationName: photo.locationName
+        )
+        return AnalysisResult(originalPhoto: photo, options: options)
     }
 
     /// Drives a smooth progress animation over ~3 seconds with staged status messages.
@@ -93,9 +100,9 @@ final class ProcessingViewModel {
         let stages: [(Double, String, Duration)] = [
             (0.15, "Analyzing geographic context...", .milliseconds(600)),
             (0.35, "Extracting visual features...", .milliseconds(700)),
-            (0.55, "Generating remastered variants...", .milliseconds(800)),
-            (0.75, "Applying artistic styles...", .milliseconds(600)),
-            (0.90, "Finalizing results...", .milliseconds(500))
+            (0.55, "Crafting creative directions...", .milliseconds(800)),
+            (0.75, "Curating remaster options...", .milliseconds(600)),
+            (0.90, "Finalizing suggestions...", .milliseconds(500))
         ]
 
         for (stageProgress, message, delay) in stages {

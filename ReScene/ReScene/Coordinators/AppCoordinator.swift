@@ -36,8 +36,8 @@ final class AppCoordinator {
     /// The photo currently selected by the user, set by `HomeViewModel`.
     var selectedPhoto: PhotoData?
 
-    /// The AI-generated remastering result, set by `ProcessingViewModel`.
-    var remasteredResult: RemasteredResult?
+    /// The AI-generated analysis result containing remastering options, set by `ProcessingViewModel`.
+    var analysisResult: AnalysisResult?
 
     /// The DI container holding all service instances.
     let environment: AppEnvironment
@@ -54,9 +54,9 @@ final class AppCoordinator {
         navigationPath.append(Route.processing)
     }
 
-    /// Transitions to the result screen after AI remastering completes.
-    func showResults(_ result: RemasteredResult) {
-        remasteredResult = result
+    /// Transitions to the result screen after AI analysis completes.
+    func showResults(_ result: AnalysisResult) {
+        analysisResult = result
         navigationPath.append(Route.result)
     }
 
@@ -70,6 +70,6 @@ final class AppCoordinator {
     func popToRoot() {
         navigationPath = NavigationPath()
         selectedPhoto = nil
-        remasteredResult = nil
+        analysisResult = nil
     }
 }

@@ -3,25 +3,26 @@
 //  ReScene
 //
 
-import CoreLocation
 import Foundation
 
 /// Production implementation of `ReSceneAPIServiceProtocol`.
 ///
-/// Sends the photo and location context to the Gemini/Imagen backend
-/// and decodes the response into a `RemasteredResult`.
-///
-/// - Note: The actual API endpoint is not yet configured. This skeleton
-///   constructs the request structure and will be connected to the real
-///   backend in a future iteration.
+/// Sends the photo and location context to the Fastify backend's
+/// `/api/analyze` endpoint and decodes the remastering options.
 final class ReSceneAPIService: ReSceneAPIServiceProtocol {
 
     private let session: URLSession
     private let baseURL: URL
 
+    #if DEBUG
+    private static let defaultBaseURL = URL(string: "http://localhost:8080")!
+    #else
+    private static let defaultBaseURL = URL(string: "https://rescene-api-568316754281.us-west1.run.app")!
+    #endif
+
     init(
         session: URLSession = .shared,
-        baseURL: URL = URL(string: "https://api.rescene.ai/v1")!
+        baseURL: URL = ReSceneAPIService.defaultBaseURL
     ) {
         self.session = session
         self.baseURL = baseURL
@@ -29,54 +30,78 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
 
     // MARK: - ReSceneAPIServiceProtocol
 
-    func remaster(photo: PhotoData) async throws -> RemasteredResult {
-        let endpoint = baseURL.appendingPathComponent("remaster")
+    func analyzeImage(
+        imageData: Data,
+        latitude: Double?,
+        longitude: Double?,
+        locationName: String?
+    ) async throws -> [RemasterOption] {
+        let endpoint = baseURL.appendingPathComponent("api/analyze")
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 60
 
-        let payload = RemasterRequest(
-            imageBase64: photo.imageData.base64EncodedString(),
-            latitude: photo.coordinate?.latitude,
-            longitude: photo.coordinate?.longitude
+        let payload = AnalyzeRequest(
+            imageBase64: imageData.base64EncodedString(),
+            latitude: latitude,
+            longitude: longitude,
+            locationName: locationName
         )
 
-        request.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await session.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode)
-        else {
-            throw AppError.apiRequestFailed(underlying: "Server returned an error status code")
+        do {
+            request.httpBody = try JSONEncoder().encode(payload)
+        } catch {
+            throw AppError.decodingError(underlying: "Failed to encode request body")
         }
 
-        let decoded = try JSONDecoder().decode(RemasterResponse.self, from: data)
+        let data: Data
+        let response: URLResponse
 
-        guard decoded.imageURLs.count == RemasteredResult.variantCount,
-              decoded.styleDescriptions.count == RemasteredResult.variantCount
-        else {
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw AppError.networkError(underlying: error.localizedDescription)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw AppError.invalidResponse
         }
 
-        return RemasteredResult(
-            originalPhoto: photo,
-            remasteredImageURLs: decoded.imageURLs,
-            styleDescriptions: decoded.styleDescriptions
-        )
+        switch httpResponse.statusCode {
+        case 200...299:
+            break
+        case 400:
+            let errorBody = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
+            throw AppError.badRequest(message: errorBody?.message ?? "Bad request")
+        case 500...599:
+            let errorBody = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
+            throw AppError.serverError(message: errorBody?.message ?? "Internal server error")
+        default:
+            throw AppError.apiRequestFailed(underlying: "HTTP \(httpResponse.statusCode)")
+        }
+
+        let decoded: AnalyzeResponse
+        do {
+            decoded = try JSONDecoder().decode(AnalyzeResponse.self, from: data)
+        } catch {
+            throw AppError.decodingError(underlying: error.localizedDescription)
+        }
+
+        guard decoded.data.options.count == AnalysisResult.optionCount else {
+            throw AppError.invalidResponse
+        }
+
+        return decoded.data.options
     }
 }
 
-// MARK: - Request / Response DTOs
+// MARK: - Request DTO
 
-private struct RemasterRequest: Encodable {
+private struct AnalyzeRequest: Encodable {
     let imageBase64: String
     let latitude: Double?
     let longitude: Double?
-}
-
-private struct RemasterResponse: Decodable {
-    let imageURLs: [URL]
-    let styleDescriptions: [String]
+    let locationName: String?
 }

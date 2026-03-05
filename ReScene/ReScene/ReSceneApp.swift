@@ -43,7 +43,7 @@ struct ReSceneApp: App {
                         )
 
                     case .result:
-                        if let result = coordinator.remasteredResult {
+                        if let result = coordinator.analysisResult {
                             ResultView(
                                 viewModel: ResultViewModel(
                                     result: result,

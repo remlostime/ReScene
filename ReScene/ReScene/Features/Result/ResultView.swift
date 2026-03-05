@@ -6,29 +6,24 @@
 import CoreLocation
 import SwiftUI
 
-/// Displays the original photo alongside a 2x2 grid of AI-generated
-/// remastered variants, allowing the user to browse and select a favorite.
+/// Displays the original photo alongside three AI-generated remastering
+/// options in a vertically scrollable, premium selection UI.
 struct ResultView: View {
 
     @Bindable var viewModel: ResultViewModel
 
-    /// Staggered entrance animation state.
     @State private var cardsAppeared = false
-
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    @State private var imageScale: CGFloat = 1.05
 
     var body: some View {
         ZStack {
             background
 
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: 28) {
                     headerSection
                     originalPhotoSection
-                    remasteredGridSection
+                    optionsSection
                     actionSection
                 }
                 .padding(.horizontal, 20)
@@ -37,7 +32,10 @@ struct ResultView: View {
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
+            withAnimation(.easeOut(duration: 0.8)) {
+                imageScale = 1.0
+            }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3)) {
                 cardsAppeared = true
             }
         }
@@ -47,7 +45,7 @@ struct ResultView: View {
 
     private var background: some View {
         LinearGradient(
-            colors: [.black, .indigo.opacity(0.3)],
+            colors: [.black, .indigo.opacity(0.3), .purple.opacity(0.15)],
             startPoint: .top,
             endPoint: .bottom
         )
@@ -58,7 +56,7 @@ struct ResultView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("Your Remasters")
+            Text("Your Scene")
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
@@ -90,59 +88,46 @@ struct ResultView: View {
             if let uiImage = viewModel.originalImage {
                 Image(uiImage: uiImage)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 200)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxHeight: 240)
                     .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .scaleEffect(imageScale)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 20)
                             .strokeBorder(.white.opacity(0.15), lineWidth: 1)
                     )
+                    .shadow(color: .black.opacity(0.3), radius: 16, y: 8)
             }
         }
     }
 
-    // MARK: - Remastered Grid
+    // MARK: - Options
 
-    private var remasteredGridSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("REMASTERED")
+    private var optionsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("CHOOSE YOUR VIBE")
                 .font(.caption2)
                 .fontWeight(.bold)
                 .foregroundStyle(.white.opacity(0.5))
                 .tracking(1.5)
 
-            LazyVGrid(columns: gridColumns, spacing: 12) {
-                ForEach(0..<RemasteredResult.variantCount, id: \.self) { index in
-                    RemasteredCard(
-                        imageURL: viewModel.remasteredURLs[index],
-                        styleDescription: viewModel.styleDescriptions[index],
-                        index: index,
-                        onSelect: { viewModel.selectVariant(at: index) }
-                    )
-                    .overlay(selectionBorder(for: index))
-                    .opacity(cardsAppeared ? 1 : 0)
-                    .offset(y: cardsAppeared ? 0 : 30)
-                    .animation(
-                        .spring(response: 0.5, dampingFraction: 0.7)
-                            .delay(Double(index) * 0.1),
-                        value: cardsAppeared
-                    )
-                }
+            ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
+                OptionCard(
+                    option: option,
+                    isSelected: viewModel.selectedOption == option,
+                    onSelect: { viewModel.selectOption(option) }
+                )
+                .opacity(cardsAppeared ? 1 : 0)
+                .offset(y: cardsAppeared ? 0 : 30)
+                .animation(
+                    .spring(response: 0.5, dampingFraction: 0.7)
+                        .delay(Double(index) * 0.12),
+                    value: cardsAppeared
+                )
             }
         }
-    }
-
-    /// Highlights the selected card with a colored border.
-    private func selectionBorder(for index: Int) -> some View {
-        RoundedRectangle(cornerRadius: 16)
-            .strokeBorder(
-                viewModel.selectedVariantIndex == index
-                    ? Color.white
-                    : Color.clear,
-                lineWidth: 2
-            )
-            .animation(.easeInOut(duration: 0.2), value: viewModel.selectedVariantIndex)
     }
 
     // MARK: - Actions
@@ -168,13 +153,28 @@ struct ResultView: View {
     let mockPhoto = PhotoData(
         id: UUID(),
         imageData: UIImage(systemName: "photo")!.pngData()!,
-        coordinate: .init(latitude: 48.8566, longitude: 2.3522),
-        locationName: "Paris, France"
+        coordinate: .init(latitude: 35.6586, longitude: 139.7454),
+        locationName: "Tokyo Tower"
     )
-    let mockResult = RemasteredResult(
+    let mockResult = AnalysisResult(
         originalPhoto: mockPhoto,
-        remasteredImageURLs: (1...4).map { URL(string: "https://picsum.photos/seed/r\($0)/400/300")! },
-        styleDescriptions: ["Golden Hour", "Cinematic Noir", "Vibrant Palette", "Watercolor"]
+        options: [
+            RemasterOption(
+                title: "Cinematic Sunset",
+                description: "为场景打造温暖的黄金时刻氛围，柔和的夕阳光线洒满整个场景。",
+                nanoPrompt: "Transform to golden hour."
+            ),
+            RemasterOption(
+                title: "Cherry Blossom Dream",
+                description: "以东京铁塔标志性的樱花季为灵感，添加浪漫的粉色花瓣。",
+                nanoPrompt: "Add cherry blossom petals."
+            ),
+            RemasterOption(
+                title: "Neon Night",
+                description: "将场景转变为充满霓虹灯光的赛博朋克夜景。",
+                nanoPrompt: "Transform to cyberpunk night."
+            )
+        ]
     )
 
     ResultView(
