@@ -54,6 +54,9 @@ struct ReSceneApp: App {
                     }
                 }
             }
+            #if DEBUG
+            .devSettingsOnShake(settingsService: coordinator.environment.settingsService)
+            #endif
         }
     }
 }

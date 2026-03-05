@@ -12,20 +12,14 @@ import Foundation
 final class ReSceneAPIService: ReSceneAPIServiceProtocol {
 
     private let session: URLSession
-    private let baseURL: URL
-
-    #if DEBUG
-    private static let defaultBaseURL = URL(string: "http://localhost:8080")!
-    #else
-    private static let defaultBaseURL = URL(string: "https://rescene-api-568316754281.us-west1.run.app")!
-    #endif
+    private let settingsService: any SettingsServiceProtocol
 
     init(
-        session: URLSession = .shared,
-        baseURL: URL = ReSceneAPIService.defaultBaseURL
+        settingsService: any SettingsServiceProtocol,
+        session: URLSession = .shared
     ) {
+        self.settingsService = settingsService
         self.session = session
-        self.baseURL = baseURL
     }
 
     // MARK: - ReSceneAPIServiceProtocol
@@ -36,7 +30,7 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
         longitude: Double?,
         locationName: String?
     ) async throws -> [RemasterOption] {
-        let endpoint = baseURL.appendingPathComponent("api/analyze")
+        let endpoint = settingsService.apiBaseURL.appendingPathComponent("api/analyze")
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
