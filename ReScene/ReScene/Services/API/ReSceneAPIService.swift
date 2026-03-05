@@ -7,8 +7,8 @@ import Foundation
 
 /// Production implementation of `ReSceneAPIServiceProtocol`.
 ///
-/// Sends the photo and location context to the Fastify backend's
-/// `/api/analyze` endpoint and decodes the remastering options.
+/// Sends requests to the Fastify backend's `/api/analyze` and `/api/render`
+/// endpoints and decodes the responses.
 final class ReSceneAPIService: ReSceneAPIServiceProtocol {
 
     private let session: URLSession
@@ -29,7 +29,7 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
         latitude: Double?,
         longitude: Double?,
         locationName: String?
-    ) async throws -> [RemasterOption] {
+    ) async throws -> (imageId: String, options: [RemasterOption]) {
         let endpoint = settingsService.apiBaseURL.appendingPathComponent("api/analyze")
 
         var request = URLRequest(url: endpoint)
@@ -50,6 +50,61 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
             throw AppError.decodingError(underlying: "Failed to encode request body")
         }
 
+        let (data, httpResponse) = try await performRequest(request)
+
+        try validateHTTPStatus(httpResponse, data: data)
+
+        let decoded: AnalyzeResponse
+        do {
+            decoded = try JSONDecoder().decode(AnalyzeResponse.self, from: data)
+        } catch {
+            throw AppError.decodingError(underlying: error.localizedDescription)
+        }
+
+        guard decoded.data.options.count == AnalysisResult.optionCount else {
+            throw AppError.invalidResponse
+        }
+
+        return (imageId: decoded.imageId, options: decoded.data.options)
+    }
+
+    func renderImage(imageId: String, prompt: String) async throws -> URL {
+        let endpoint = settingsService.apiBaseURL.appendingPathComponent("api/render")
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 120
+
+        let payload = RenderRequest(imageId: imageId, nanoPrompt: prompt)
+
+        do {
+            request.httpBody = try JSONEncoder().encode(payload)
+        } catch {
+            throw AppError.decodingError(underlying: "Failed to encode request body")
+        }
+
+        let (data, httpResponse) = try await performRequest(request)
+
+        try validateHTTPStatus(httpResponse, data: data)
+
+        let decoded: RenderResponse
+        do {
+            decoded = try JSONDecoder().decode(RenderResponse.self, from: data)
+        } catch {
+            throw AppError.decodingError(underlying: error.localizedDescription)
+        }
+
+        guard let url = URL(string: decoded.resultUrl) else {
+            throw AppError.invalidResponse
+        }
+
+        return url
+    }
+
+    // MARK: - Private Helpers
+
+    private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
 
@@ -63,7 +118,11 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
             throw AppError.invalidResponse
         }
 
-        switch httpResponse.statusCode {
+        return (data, httpResponse)
+    }
+
+    private func validateHTTPStatus(_ response: HTTPURLResponse, data: Data) throws {
+        switch response.statusCode {
         case 200...299:
             break
         case 400:
@@ -73,29 +132,26 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
             let errorBody = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
             throw AppError.serverError(message: errorBody?.message ?? "Internal server error")
         default:
-            throw AppError.apiRequestFailed(underlying: "HTTP \(httpResponse.statusCode)")
+            throw AppError.apiRequestFailed(underlying: "HTTP \(response.statusCode)")
         }
-
-        let decoded: AnalyzeResponse
-        do {
-            decoded = try JSONDecoder().decode(AnalyzeResponse.self, from: data)
-        } catch {
-            throw AppError.decodingError(underlying: error.localizedDescription)
-        }
-
-        guard decoded.data.options.count == AnalysisResult.optionCount else {
-            throw AppError.invalidResponse
-        }
-
-        return decoded.data.options
     }
 }
 
-// MARK: - Request DTO
+// MARK: - Request DTOs
 
 private struct AnalyzeRequest: Encodable {
     let imageBase64: String
     let latitude: Double?
     let longitude: Double?
     let locationName: String?
+}
+
+private struct RenderRequest: Encodable {
+    let imageId: String
+    let nanoPrompt: String
+
+    enum CodingKeys: String, CodingKey {
+        case imageId
+        case nanoPrompt = "nano_prompt"
+    }
 }

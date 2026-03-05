@@ -7,15 +7,18 @@ import Foundation
 
 /// Mock implementation of `ReSceneAPIServiceProtocol` for previews and testing.
 ///
-/// Simulates a network delay and returns three placeholder remastering options
-/// with location-inspired descriptions.
+/// Simulates network delays and returns placeholder data for both
+/// the analyze and render endpoints.
 final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
 
-    /// When `true`, `analyzeImage` will throw `AppError.serverError`.
+    /// When `true`, API calls will throw `AppError.serverError`.
     var shouldFail = false
 
-    /// Simulated network latency.
+    /// Simulated network latency for the analyze call.
     var simulatedDelay: Duration = .seconds(3)
+
+    /// Simulated network latency for the render call.
+    var simulatedRenderDelay: Duration = .seconds(5)
 
     // MARK: - ReSceneAPIServiceProtocol
 
@@ -24,14 +27,14 @@ final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
         latitude: Double?,
         longitude: Double?,
         locationName: String?
-    ) async throws -> [RemasterOption] {
+    ) async throws -> (imageId: String, options: [RemasterOption]) {
         if shouldFail {
             throw AppError.serverError(message: "Mock network failure")
         }
 
         try await Task.sleep(for: simulatedDelay)
 
-        return [
+        let options = [
             RemasterOption(
                 title: "Cinematic Sunset",
                 description: "为场景打造温暖的黄金时刻氛围，柔和的夕阳光线洒满整个场景。",
@@ -48,5 +51,17 @@ final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
                 nanoPrompt: "Transform the background into a cyberpunk night scene with neon lights."
             )
         ]
+
+        return (imageId: "mock-\(UUID().uuidString)", options: options)
+    }
+
+    func renderImage(imageId: String, prompt: String) async throws -> URL {
+        if shouldFail {
+            throw AppError.serverError(message: "Mock render failure")
+        }
+
+        try await Task.sleep(for: simulatedRenderDelay)
+
+        return URL(string: "https://picsum.photos/seed/rescene/1024/1024")!
     }
 }

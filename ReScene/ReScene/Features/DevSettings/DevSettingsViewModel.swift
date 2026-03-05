@@ -46,9 +46,9 @@ final class DevSettingsViewModel {
         selectedEnvironment = originalEnvironment
     }
 
-    /// Called when the user confirms the restart alert -- commits the change.
-    func confirmSelection() {
-        originalEnvironment = selectedEnvironment
+    /// Terminates the app so the new settings take effect on next launch.
+    func restartApp() {
+        exit(0)
     }
 }
 

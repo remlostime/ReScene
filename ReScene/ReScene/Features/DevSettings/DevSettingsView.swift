@@ -63,8 +63,8 @@ struct DevSettingsView: View {
                 "Restart Required",
                 isPresented: $viewModel.showRestartAlert
             ) {
-                Button("Restart Later") {
-                    viewModel.confirmSelection()
+                Button("Restart", role: .destructive) {
+                    viewModel.restartApp()
                 }
                 Button("Cancel", role: .cancel) {
                     viewModel.revertSelection()

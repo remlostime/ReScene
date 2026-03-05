@@ -5,6 +5,7 @@
 
 import Observation
 import SwiftUI
+import UIKit
 
 // MARK: - Route
 
@@ -15,6 +16,8 @@ import SwiftUI
 enum Route: Hashable {
     case processing
     case result
+    case rendering
+    case finalResult
 }
 
 // MARK: - AppCoordinator
@@ -23,7 +26,7 @@ enum Route: Hashable {
 ///
 /// `AppCoordinator` owns the `NavigationPath` driving the root `NavigationStack`
 /// and acts as the single source of truth for data that flows between screens
-/// (selected photo, processing results).
+/// (selected photo, processing results, rendering output).
 ///
 /// ViewModels receive a reference to the coordinator so they can trigger
 /// navigation without coupling Views to navigation logic.
@@ -38,6 +41,12 @@ final class AppCoordinator {
 
     /// The AI-generated analysis result containing remastering options, set by `ProcessingViewModel`.
     var analysisResult: AnalysisResult?
+
+    /// The vibe option the user selected on the result screen, consumed by `RenderingViewModel`.
+    var selectedOption: RemasterOption?
+
+    /// The AI-rendered image downloaded after a successful render call.
+    var renderedImage: UIImage?
 
     /// The DI container holding all service instances.
     let environment: AppEnvironment
@@ -60,6 +69,18 @@ final class AppCoordinator {
         navigationPath.append(Route.result)
     }
 
+    /// Transitions to the rendering screen after the user picks a vibe.
+    func startRendering(option: RemasterOption) {
+        selectedOption = option
+        navigationPath.append(Route.rendering)
+    }
+
+    /// Transitions to the final result screen after the rendered image is ready.
+    func showFinalResult(renderedImage: UIImage) {
+        self.renderedImage = renderedImage
+        navigationPath.append(Route.finalResult)
+    }
+
     /// Pops one level back in the navigation stack.
     func pop() {
         guard !navigationPath.isEmpty else { return }
@@ -71,5 +92,7 @@ final class AppCoordinator {
         navigationPath = NavigationPath()
         selectedPhoto = nil
         analysisResult = nil
+        selectedOption = nil
+        renderedImage = nil
     }
 }

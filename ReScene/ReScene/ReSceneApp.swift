@@ -51,6 +51,17 @@ struct ReSceneApp: App {
                                 )
                             )
                         }
+
+                    case .rendering:
+                        RenderingView(
+                            viewModel: RenderingViewModel(
+                                apiService: coordinator.environment.apiService,
+                                coordinator: coordinator
+                            )
+                        )
+
+                    case .finalResult:
+                        FinalResultView(coordinator: coordinator)
                     }
                 }
             }

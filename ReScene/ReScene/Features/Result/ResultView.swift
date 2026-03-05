@@ -135,11 +135,20 @@ struct ResultView: View {
     private var actionSection: some View {
         VStack(spacing: 12) {
             GlassButton(
-                title: "Start Over",
-                systemImage: "arrow.counterclockwise",
-                action: { viewModel.startOver() },
-                tintColor: .white
+                title: "Apply This Vibe",
+                systemImage: "wand.and.stars",
+                action: { viewModel.proceedToRendering() },
+                tintColor: .white,
+                isEnabled: viewModel.canProceed
             )
+
+            Button {
+                viewModel.startOver()
+            } label: {
+                Text("Start Over")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
         }
         .padding(.top, 8)
         .padding(.bottom, 24)
@@ -157,6 +166,7 @@ struct ResultView: View {
         locationName: "Tokyo Tower"
     )
     let mockResult = AnalysisResult(
+        imageId: "mock-preview-id",
         originalPhoto: mockPhoto,
         options: [
             RemasterOption(

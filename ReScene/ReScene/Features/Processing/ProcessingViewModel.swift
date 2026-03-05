@@ -86,13 +86,13 @@ final class ProcessingViewModel {
     // MARK: - Private
 
     private func callAPI(with photo: PhotoData) async throws -> AnalysisResult {
-        let options = try await apiService.analyzeImage(
+        let (imageId, options) = try await apiService.analyzeImage(
             imageData: photo.imageData,
             latitude: photo.coordinate?.latitude,
             longitude: photo.coordinate?.longitude,
             locationName: photo.locationName
         )
-        return AnalysisResult(originalPhoto: photo, options: options)
+        return AnalysisResult(imageId: imageId, originalPhoto: photo, options: options)
     }
 
     /// Drives a smooth progress animation over ~3 seconds with staged status messages.

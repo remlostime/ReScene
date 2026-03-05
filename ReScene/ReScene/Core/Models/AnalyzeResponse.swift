@@ -7,9 +7,11 @@ import Foundation
 
 /// Top-level response wrapper for `POST /api/analyze`.
 ///
-/// Mirrors the JSON envelope: `{ "status": "success", "data": { "options": [...] } }`.
+/// Mirrors the JSON envelope:
+/// `{ "status": "success", "imageId": "...", "data": { "options": [...] } }`.
 struct AnalyzeResponse: Decodable {
     let status: String
+    let imageId: String
     let data: AnalyzeData
 
     struct AnalyzeData: Decodable {
