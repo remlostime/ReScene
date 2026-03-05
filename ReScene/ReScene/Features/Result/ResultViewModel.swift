@@ -52,12 +52,23 @@ final class ResultViewModel {
         result.options
     }
 
+    /// Whether a vibe is selected and the user can proceed to rendering.
+    var canProceed: Bool {
+        selectedOption != nil
+    }
+
     // MARK: - Actions
 
     /// Selects a remastering option by reference.
     func selectOption(_ option: RemasterOption) {
         selectedOption = option
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
+    /// Navigates to the rendering screen with the currently selected option.
+    func proceedToRendering() {
+        guard let option = selectedOption else { return }
+        coordinator.startRendering(option: option)
     }
 
     /// Returns to the home screen to start a new session.
