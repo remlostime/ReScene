@@ -7,11 +7,11 @@ import Foundation
 
 /// Mock implementation of `ReSceneAPIServiceProtocol` for previews and testing.
 ///
-/// Simulates a network delay and returns four placeholder remastered image URLs
-/// with location-inspired style descriptions.
+/// Simulates a network delay and returns three placeholder remastering options
+/// with location-inspired descriptions.
 final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
 
-    /// When `true`, `remaster(photo:)` will throw `AppError.apiRequestFailed`.
+    /// When `true`, `analyzeImage` will throw `AppError.serverError`.
     var shouldFail = false
 
     /// Simulated network latency.
@@ -19,28 +19,34 @@ final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
 
     // MARK: - ReSceneAPIServiceProtocol
 
-    func remaster(photo: PhotoData) async throws -> RemasteredResult {
+    func analyzeImage(
+        imageData: Data,
+        latitude: Double?,
+        longitude: Double?,
+        locationName: String?
+    ) async throws -> [RemasterOption] {
         if shouldFail {
-            throw AppError.apiRequestFailed(underlying: "Mock network failure")
+            throw AppError.serverError(message: "Mock network failure")
         }
 
         try await Task.sleep(for: simulatedDelay)
 
-        let mockURLs = (1...RemasteredResult.variantCount).map { index in
-            URL(string: "https://picsum.photos/seed/rescene\(index)/800/600")!
-        }
-
-        let styles = [
-            "Golden Hour Glow",
-            "Cinematic Noir",
-            "Vibrant Local Palette",
-            "Dreamy Watercolor"
+        return [
+            RemasterOption(
+                title: "Cinematic Sunset",
+                description: "为场景打造温暖的黄金时刻氛围，柔和的夕阳光线洒满整个场景。",
+                nanoPrompt: "Transform the background lighting to warm golden hour with soft sun rays."
+            ),
+            RemasterOption(
+                title: "Cherry Blossom Dream",
+                description: "以标志性的樱花季为灵感，添加浪漫的粉色花瓣。",
+                nanoPrompt: "Add cherry blossom branches and falling petals to the background."
+            ),
+            RemasterOption(
+                title: "Neon Night",
+                description: "将场景转变为充满霓虹灯光的赛博朋克夜景。",
+                nanoPrompt: "Transform the background into a cyberpunk night scene with neon lights."
+            )
         ]
-
-        return RemasteredResult(
-            originalPhoto: photo,
-            remasteredImageURLs: mockURLs,
-            styleDescriptions: styles
-        )
     }
 }
