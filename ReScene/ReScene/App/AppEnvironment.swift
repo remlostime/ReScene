@@ -21,23 +21,30 @@ struct AppEnvironment: Sendable {
     /// Service for communicating with the AI remastering backend.
     let apiService: any ReSceneAPIServiceProtocol
 
+    /// Service for app-wide configuration and user preferences.
+    let settingsService: any SettingsServiceProtocol
+
     // MARK: - Factory Methods
 
     /// Creates an environment wired with production service implementations.
     static func live() -> AppEnvironment {
-        AppEnvironment(
+        let settings = SettingsService()
+        return AppEnvironment(
             locationService: LocationService(),
             photoPickerService: PhotoPickerService(),
-            apiService: ReSceneAPIService()
+            apiService: ReSceneAPIService(settingsService: settings),
+            settingsService: settings
         )
     }
 
     /// Creates an environment wired with mock services for previews and testing.
     static func mock() -> AppEnvironment {
-        AppEnvironment(
+        let settings = MockSettingsService()
+        return AppEnvironment(
             locationService: MockLocationService(),
             photoPickerService: MockPhotoPickerService(),
-            apiService: MockReSceneAPIService()
+            apiService: MockReSceneAPIService(),
+            settingsService: settings
         )
     }
 }
