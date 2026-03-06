@@ -7,7 +7,7 @@ import Photos
 import SwiftUI
 import UIKit
 
-/// Presents the before/after comparison slider and action buttons for
+/// Presents the before/after comparison view and action buttons for
 /// saving or sharing the AI-rendered image.
 struct FinalResultView: View {
 
@@ -93,41 +93,20 @@ struct FinalResultView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Slider
+    // MARK: - Comparison
 
     private var sliderSection: some View {
         Group {
             if let before = coordinator.analysisResult?.originalPhoto.uiImage,
                let after = coordinator.renderedImage {
-                ZStack(alignment: .top) {
-                    BeforeAfterSliderView(
-                        beforeImage: before,
-                        afterImage: after
-                    )
-
-                    HStack {
-                        label("BEFORE")
-                        Spacer()
-                        label("AFTER")
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 12)
-                }
+                BeforeAfterCompareView(
+                    beforeImage: before,
+                    afterImage: after
+                )
                 .opacity(sliderAppeared ? 1 : 0)
                 .scaleEffect(sliderAppeared ? 1 : 0.92)
             }
         }
-    }
-
-    private func label(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.bold)
-            .tracking(1.2)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(.black.opacity(0.5), in: Capsule())
     }
 
     // MARK: - Action Bar
