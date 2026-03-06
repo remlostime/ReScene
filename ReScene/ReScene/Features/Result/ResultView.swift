@@ -6,8 +6,8 @@
 import CoreLocation
 import SwiftUI
 
-/// Displays the original photo alongside three AI-generated remastering
-/// options in a vertically scrollable, premium selection UI.
+/// Displays the original photo alongside AI-generated remastering
+/// options in a horizontal grid selection UI.
 struct ResultView: View {
 
     @Bindable var viewModel: ResultViewModel
@@ -24,13 +24,27 @@ struct ResultView: View {
                     headerSection
                     originalPhotoSection
                     optionsSection
-                    actionSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.goBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .task {
+            await viewModel.resolveLocationName()
+        }
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 imageScale = 1.0
@@ -113,45 +127,70 @@ struct ResultView: View {
                 .foregroundStyle(.white.opacity(0.5))
                 .tracking(1.5)
 
-            ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
-                OptionCard(
-                    option: option,
-                    isSelected: viewModel.selectedOption == option,
-                    onSelect: { viewModel.selectOption(option) }
-                )
-                .opacity(cardsAppeared ? 1 : 0)
-                .offset(y: cardsAppeared ? 0 : 30)
-                .animation(
-                    .spring(response: 0.5, dampingFraction: 0.7)
-                        .delay(Double(index) * 0.12),
-                    value: cardsAppeared
-                )
+            HStack(spacing: 12) {
+                ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
+                    VibeGridCard(
+                        option: option,
+                        onTap: { viewModel.showVibeDetail(option: option) }
+                    )
+                    .opacity(cardsAppeared ? 1 : 0)
+                    .offset(y: cardsAppeared ? 0 : 20)
+                    .animation(
+                        .spring(response: 0.5, dampingFraction: 0.7)
+                            .delay(Double(index) * 0.12),
+                        value: cardsAppeared
+                    )
+                }
             }
+
+            makeYourOwnCard
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Make Your Own
 
-    private var actionSection: some View {
-        VStack(spacing: 12) {
-            GlassButton(
-                title: "Apply This Vibe",
-                systemImage: "wand.and.stars",
-                action: { viewModel.proceedToRendering() },
-                tintColor: .white,
-                isEnabled: viewModel.canProceed
-            )
+    private var makeYourOwnCard: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.1))
+                    .frame(width: 44, height: 44)
 
-            Button {
-                viewModel.startOver()
-            } label: {
-                Text("Start Over")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
+                Image(systemName: "paintbrush.fill")
+                    .font(.system(size: 18))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
             }
+
+            Text("Make Your Own")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.body.weight(.medium))
+                .foregroundStyle(.white.opacity(0.4))
         }
-        .padding(.top, 8)
-        .padding(.bottom, 24)
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.purple.opacity(0.15))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
+        .opacity(cardsAppeared ? 1 : 0)
+        .offset(y: cardsAppeared ? 0 : 20)
+        .animation(
+            .spring(response: 0.5, dampingFraction: 0.7)
+                .delay(0.36),
+            value: cardsAppeared
+        )
     }
 }
 
@@ -187,7 +226,13 @@ struct ResultView: View {
         ]
     )
 
-    ResultView(
-        viewModel: ResultViewModel(result: mockResult, coordinator: coordinator)
-    )
+    NavigationStack {
+        ResultView(
+            viewModel: ResultViewModel(
+                result: mockResult,
+                coordinator: coordinator,
+                geocodingService: MockGeocodingService()
+            )
+        )
+    }
 }

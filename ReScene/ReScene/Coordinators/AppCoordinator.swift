@@ -16,6 +16,7 @@ import UIKit
 enum Route: Hashable {
     case processing
     case result
+    case vibeDetail
     case rendering
     case finalResult
 }
@@ -67,6 +68,12 @@ final class AppCoordinator {
     func showResults(_ result: AnalysisResult) {
         analysisResult = result
         navigationPath.append(Route.result)
+    }
+
+    /// Transitions to the vibe detail screen after the user taps a vibe card.
+    func showVibeDetail(option: RemasterOption) {
+        selectedOption = option
+        navigationPath.append(Route.vibeDetail)
     }
 
     /// Transitions to the rendering screen after the user picks a vibe.

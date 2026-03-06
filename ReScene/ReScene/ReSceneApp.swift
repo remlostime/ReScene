@@ -47,8 +47,19 @@ struct ReSceneApp: App {
                             ResultView(
                                 viewModel: ResultViewModel(
                                     result: result,
-                                    coordinator: coordinator
+                                    coordinator: coordinator,
+                                    geocodingService: coordinator.environment.geocodingService
                                 )
+                            )
+                        }
+
+                    case .vibeDetail:
+                        if let option = coordinator.selectedOption,
+                           let result = coordinator.analysisResult {
+                            VibeDetailView(
+                                option: option,
+                                originalImage: result.originalPhoto.uiImage,
+                                coordinator: coordinator
                             )
                         }
 

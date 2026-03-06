@@ -7,26 +7,39 @@ import CoreLocation
 import Observation
 import UIKit
 
-/// Drives the result screen, exposing the original photo and three
-/// AI-generated remastering options for display and selection.
+/// Drives the result screen, exposing the original photo and
+/// AI-generated remastering options for display in a horizontal grid.
 @Observable
 final class ResultViewModel {
-
-    // MARK: - Published State
-
-    /// The option the user has tapped, if any.
-    var selectedOption: RemasterOption?
 
     // MARK: - Dependencies
 
     private let result: AnalysisResult
     private let coordinator: AppCoordinator
+    private let geocodingService: any GeocodingServiceProtocol
+
+    // MARK: - State
+
+    /// Human-readable location label, initially populated with coordinates
+    /// and lazily resolved to a place name via reverse geocoding.
+    var locationLabel: String?
 
     // MARK: - Init
 
-    init(result: AnalysisResult, coordinator: AppCoordinator) {
+    init(
+        result: AnalysisResult,
+        coordinator: AppCoordinator,
+        geocodingService: any GeocodingServiceProtocol
+    ) {
         self.result = result
         self.coordinator = coordinator
+        self.geocodingService = geocodingService
+
+        if let name = result.originalPhoto.locationName {
+            self.locationLabel = name
+        } else if let coord = result.originalPhoto.coordinate {
+            self.locationLabel = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
+        }
     }
 
     // MARK: - Computed Properties
@@ -36,43 +49,34 @@ final class ResultViewModel {
         result.originalPhoto.uiImage
     }
 
-    /// Location label from the original photo, if available.
-    var locationLabel: String? {
-        if let name = result.originalPhoto.locationName {
-            return name
-        }
-        if let coord = result.originalPhoto.coordinate {
-            return String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
-        }
-        return nil
-    }
-
-    /// The three remastering options.
+    /// The remastering options.
     var options: [RemasterOption] {
         result.options
     }
 
-    /// Whether a vibe is selected and the user can proceed to rendering.
-    var canProceed: Bool {
-        selectedOption != nil
-    }
-
     // MARK: - Actions
 
-    /// Selects a remastering option by reference.
-    func selectOption(_ option: RemasterOption) {
-        selectedOption = option
+    /// Navigates to the vibe detail screen for the given option.
+    func showVibeDetail(option: RemasterOption) {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        coordinator.showVibeDetail(option: option)
     }
 
-    /// Navigates to the rendering screen with the currently selected option.
-    func proceedToRendering() {
-        guard let option = selectedOption else { return }
-        coordinator.startRendering(option: option)
-    }
-
-    /// Returns to the home screen to start a new session.
-    func startOver() {
+    /// Pops back to the previous screen.
+    func goBack() {
         coordinator.popToRoot()
+    }
+
+    /// Reverse-geocodes the photo's coordinate into a human-readable name.
+    ///
+    /// Skips the network call when a name is already available (e.g., from EXIF).
+    func resolveLocationName() async {
+        guard result.originalPhoto.locationName == nil,
+              let coordinate = result.originalPhoto.coordinate
+        else { return }
+
+        if let name = await geocodingService.reverseGeocode(coordinate) {
+            locationLabel = name
+        }
     }
 }
