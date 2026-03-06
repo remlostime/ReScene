@@ -47,7 +47,8 @@ struct ReSceneApp: App {
                             ResultView(
                                 viewModel: ResultViewModel(
                                     result: result,
-                                    coordinator: coordinator
+                                    coordinator: coordinator,
+                                    geocodingService: coordinator.environment.geocodingService
                                 )
                             )
                         }

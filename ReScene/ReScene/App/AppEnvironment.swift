@@ -24,6 +24,9 @@ struct AppEnvironment: Sendable {
     /// Service for app-wide configuration and user preferences.
     let settingsService: any SettingsServiceProtocol
 
+    /// Service for reverse-geocoding coordinates into place names.
+    let geocodingService: any GeocodingServiceProtocol
+
     // MARK: - Factory Methods
 
     /// Creates an environment wired with production service implementations.
@@ -33,7 +36,8 @@ struct AppEnvironment: Sendable {
             locationService: LocationService(),
             photoPickerService: PhotoPickerService(),
             apiService: ReSceneAPIService(settingsService: settings),
-            settingsService: settings
+            settingsService: settings,
+            geocodingService: GeocodingService()
         )
     }
 
@@ -44,7 +48,8 @@ struct AppEnvironment: Sendable {
             locationService: MockLocationService(),
             photoPickerService: MockPhotoPickerService(),
             apiService: MockReSceneAPIService(),
-            settingsService: settings
+            settingsService: settings,
+            geocodingService: MockGeocodingService()
         )
     }
 }

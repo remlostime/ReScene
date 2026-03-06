@@ -16,12 +16,30 @@ final class ResultViewModel {
 
     private let result: AnalysisResult
     private let coordinator: AppCoordinator
+    private let geocodingService: any GeocodingServiceProtocol
+
+    // MARK: - State
+
+    /// Human-readable location label, initially populated with coordinates
+    /// and lazily resolved to a place name via reverse geocoding.
+    var locationLabel: String?
 
     // MARK: - Init
 
-    init(result: AnalysisResult, coordinator: AppCoordinator) {
+    init(
+        result: AnalysisResult,
+        coordinator: AppCoordinator,
+        geocodingService: any GeocodingServiceProtocol
+    ) {
         self.result = result
         self.coordinator = coordinator
+        self.geocodingService = geocodingService
+
+        if let name = result.originalPhoto.locationName {
+            self.locationLabel = name
+        } else if let coord = result.originalPhoto.coordinate {
+            self.locationLabel = String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
+        }
     }
 
     // MARK: - Computed Properties
@@ -29,17 +47,6 @@ final class ResultViewModel {
     /// The original photo's `UIImage` for display.
     var originalImage: UIImage? {
         result.originalPhoto.uiImage
-    }
-
-    /// Location label from the original photo, if available.
-    var locationLabel: String? {
-        if let name = result.originalPhoto.locationName {
-            return name
-        }
-        if let coord = result.originalPhoto.coordinate {
-            return String(format: "%.4f, %.4f", coord.latitude, coord.longitude)
-        }
-        return nil
     }
 
     /// The remastering options.
@@ -58,5 +65,18 @@ final class ResultViewModel {
     /// Pops back to the previous screen.
     func goBack() {
         coordinator.popToRoot()
+    }
+
+    /// Reverse-geocodes the photo's coordinate into a human-readable name.
+    ///
+    /// Skips the network call when a name is already available (e.g., from EXIF).
+    func resolveLocationName() async {
+        guard result.originalPhoto.locationName == nil,
+              let coordinate = result.originalPhoto.coordinate
+        else { return }
+
+        if let name = await geocodingService.reverseGeocode(coordinate) {
+            locationLabel = name
+        }
     }
 }

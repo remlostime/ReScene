@@ -42,6 +42,9 @@ struct ResultView: View {
             }
         }
         .toolbarBackground(.hidden, for: .navigationBar)
+        .task {
+            await viewModel.resolveLocationName()
+        }
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 imageScale = 1.0
@@ -225,7 +228,11 @@ struct ResultView: View {
 
     NavigationStack {
         ResultView(
-            viewModel: ResultViewModel(result: mockResult, coordinator: coordinator)
+            viewModel: ResultViewModel(
+                result: mockResult,
+                coordinator: coordinator,
+                geocodingService: MockGeocodingService()
+            )
         )
     }
 }
