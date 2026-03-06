@@ -111,12 +111,46 @@ struct VibeDetailView: View {
 
     // MARK: - Apply Button
 
+    @State private var isButtonPressed = false
+
     private var applyButton: some View {
-        GlassButton(
-            title: "Apply This Vibe",
-            systemImage: "wand.and.stars",
-            action: { coordinator.startRendering(option: option) },
-            tintColor: .white
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            coordinator.startRendering(option: option)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "wand.and.stars")
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+
+                Text("Apply This Vibe")
+                    .font(.headline)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .padding(.horizontal, 24)
+            .background(
+                LinearGradient(
+                    colors: [.indigo, .purple],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: 20)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.white.opacity(0.25), lineWidth: 1)
+            )
+            .shadow(color: .purple.opacity(0.4), radius: 16, y: 6)
+            .scaleEffect(isButtonPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isButtonPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isButtonPressed = true }
+                .onEnded { _ in isButtonPressed = false }
         )
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
