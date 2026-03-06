@@ -22,11 +22,10 @@ struct ResultView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 28) {
                     headerSection
-                        .padding(.horizontal, 20)
                     originalPhotoSection
-                        .padding(.horizontal, 20)
                     optionsSection
                 }
+                .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
         }
@@ -124,27 +123,71 @@ struct ResultView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.white.opacity(0.5))
                 .tracking(1.5)
-                .padding(.horizontal, 20)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
-                        VibeGridCard(
-                            option: option,
-                            onTap: { viewModel.showVibeDetail(option: option) }
-                        )
-                        .opacity(cardsAppeared ? 1 : 0)
-                        .offset(y: cardsAppeared ? 0 : 20)
-                        .animation(
-                            .spring(response: 0.5, dampingFraction: 0.7)
-                                .delay(Double(index) * 0.12),
-                            value: cardsAppeared
-                        )
-                    }
+            HStack(spacing: 12) {
+                ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
+                    VibeGridCard(
+                        option: option,
+                        onTap: { viewModel.showVibeDetail(option: option) }
+                    )
+                    .opacity(cardsAppeared ? 1 : 0)
+                    .offset(y: cardsAppeared ? 0 : 20)
+                    .animation(
+                        .spring(response: 0.5, dampingFraction: 0.7)
+                            .delay(Double(index) * 0.12),
+                        value: cardsAppeared
+                    )
                 }
-                .padding(.horizontal, 20)
             }
+
+            makeYourOwnCard
         }
+    }
+
+    // MARK: - Make Your Own
+
+    private var makeYourOwnCard: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.1))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: "paintbrush.fill")
+                    .font(.system(size: 18))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+            }
+
+            Text("Make Your Own")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.body.weight(.medium))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.15))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
+        .opacity(cardsAppeared ? 1 : 0)
+        .offset(y: cardsAppeared ? 0 : 20)
+        .animation(
+            .spring(response: 0.5, dampingFraction: 0.7)
+                .delay(0.36),
+            value: cardsAppeared
+        )
     }
 }
 
