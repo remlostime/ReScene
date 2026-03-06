@@ -23,9 +23,6 @@ final class HomeViewModel {
     /// The current `PhotosPicker` selection, observed by the view.
     var pickerItem: PhotosPickerItem?
 
-    /// The loaded photo data ready for processing, displayed as a preview.
-    var selectedPhoto: PhotoData?
-
     /// Indicates an async operation is in progress.
     var isLoading = false
 
@@ -58,7 +55,8 @@ final class HomeViewModel {
     /// Called when the user selects a photo from the picker.
     ///
     /// Loads the image data, extracts GPS metadata, and if no EXIF GPS is found,
-    /// falls back to the device's current location.
+    /// falls back to the device's current location. Navigates directly to the
+    /// processing screen on success.
     func handlePhotoSelection() async {
         guard let pickerItem else { return }
 
@@ -73,7 +71,8 @@ final class HomeViewModel {
                 photo = await enrichWithDeviceLocation(photo)
             }
 
-            selectedPhoto = photo
+            coordinator.startProcessing(with: photo)
+            self.pickerItem = nil
         } catch let appError as AppError {
             presentError(appError)
         } catch {
@@ -81,20 +80,6 @@ final class HomeViewModel {
         }
 
         isLoading = false
-    }
-
-    /// Navigates to the processing screen with the currently selected photo.
-    func proceedToProcessing() {
-        guard let selectedPhoto else { return }
-        coordinator.startProcessing(with: selectedPhoto)
-        resetSelection()
-    }
-
-    /// Clears the current selection so the user can pick a different photo.
-    func resetSelection() {
-        pickerItem = nil
-        selectedPhoto = nil
-        error = nil
     }
 
     // MARK: - Private

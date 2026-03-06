@@ -6,8 +6,8 @@
 import PhotosUI
 import SwiftUI
 
-/// The app's landing screen featuring a glassmorphism UI with a photo picker
-/// and a preview of the selected image before proceeding to remastering.
+/// The app's landing screen featuring a glassmorphism UI with a photo picker.
+/// Selecting a photo navigates directly to the processing screen.
 struct HomeView: View {
 
     @Bindable var viewModel: HomeViewModel
@@ -64,27 +64,11 @@ struct HomeView: View {
             headerSection
                 .padding(.bottom, 40)
 
-            if let photo = viewModel.selectedPhoto, let uiImage = photo.uiImage {
-                photoPreviewSection(uiImage: uiImage, photo: photo)
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.8).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-            } else {
-                pickerSection
-                    .transition(.opacity)
-            }
+            pickerSection
 
             Spacer()
-
-            if viewModel.selectedPhoto != nil {
-                actionButtons
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .padding(.bottom, 20)
-            }
         }
         .padding(.horizontal, 24)
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: viewModel.selectedPhoto)
     }
 
     // MARK: - Header
@@ -144,65 +128,6 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Photo Preview
-
-    private func photoPreviewSection(uiImage: UIImage, photo: PhotoData) -> some View {
-        VStack(spacing: 16) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxHeight: 300)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-
-            if let locationName = photo.locationName {
-                locationBadge(locationName)
-            } else if photo.coordinate != nil {
-                locationBadge("GPS data found")
-            } else {
-                locationBadge("No location data", icon: "location.slash")
-            }
-        }
-    }
-
-    private func locationBadge(_ text: String, icon: String = "location.fill") -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.caption)
-            Text(text)
-                .font(.caption)
-                .fontWeight(.medium)
-        }
-        .foregroundStyle(.white.opacity(0.9))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: Capsule())
-    }
-
-    // MARK: - Action Buttons
-
-    private var actionButtons: some View {
-        VStack(spacing: 12) {
-            GlassButton(
-                title: "Remaster This Photo",
-                systemImage: "wand.and.stars",
-                action: { viewModel.proceedToProcessing() },
-                tintColor: .white
-            )
-
-            Button {
-                viewModel.resetSelection()
-            } label: {
-                Text("Choose Different Photo")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-        }
-    }
 }
 
 // MARK: - Preview

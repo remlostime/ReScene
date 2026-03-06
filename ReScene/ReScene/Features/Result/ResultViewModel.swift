@@ -57,6 +57,6 @@ final class ResultViewModel {
 
     /// Pops back to the previous screen.
     func goBack() {
-        coordinator.pop()
+        coordinator.popToRoot()
     }
 }
