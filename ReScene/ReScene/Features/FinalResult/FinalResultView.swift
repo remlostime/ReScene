@@ -7,16 +7,17 @@ import Photos
 import SwiftUI
 import UIKit
 
-/// Presents the before/after comparison slider and action buttons for
-/// saving or sharing the AI-rendered image.
+/// Presents the before/after comparison view and action buttons for
+/// saving the AI-rendered image.
 struct FinalResultView: View {
 
     let coordinator: AppCoordinator
 
-    @State private var showShareSheet = false
     @State private var savedToPhotos = false
     @State private var showPermissionAlert = false
     @State private var sliderAppeared = false
+    @State private var isSavePressed = false
+    @State private var isStartOverPressed = false
 
     var body: some View {
         ZStack {
@@ -38,12 +39,18 @@ struct FinalResultView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .sheet(isPresented: $showShareSheet) {
-            if let image = coordinator.renderedImage {
-                ActivityViewController(activityItems: [image])
-                    .presentationDetents([.medium, .large])
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    coordinator.pop()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
             }
         }
+        .toolbarBackground(.hidden, for: .navigationBar)
         .alert(
             "Photo Library Access Required",
             isPresented: $showPermissionAlert
@@ -93,72 +100,105 @@ struct FinalResultView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Slider
+    // MARK: - Comparison
 
     private var sliderSection: some View {
         Group {
             if let before = coordinator.analysisResult?.originalPhoto.uiImage,
                let after = coordinator.renderedImage {
-                ZStack(alignment: .top) {
-                    BeforeAfterSliderView(
-                        beforeImage: before,
-                        afterImage: after
-                    )
-
-                    HStack {
-                        label("BEFORE")
-                        Spacer()
-                        label("AFTER")
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 12)
-                }
+                BeforeAfterCompareView(
+                    beforeImage: before,
+                    afterImage: after
+                )
                 .opacity(sliderAppeared ? 1 : 0)
                 .scaleEffect(sliderAppeared ? 1 : 0.92)
             }
         }
     }
 
-    private func label(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.bold)
-            .tracking(1.2)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(.black.opacity(0.5), in: Capsule())
-    }
-
     // MARK: - Action Bar
 
     private var actionBar: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                GlassButton(
-                    title: savedToPhotos ? "Saved!" : "Save to Photos",
-                    systemImage: savedToPhotos ? "checkmark.circle.fill" : "square.and.arrow.down",
-                    action: saveToPhotos,
-                    tintColor: savedToPhotos ? .green : .white
-                )
-
-                GlassButton(
-                    title: "Share",
-                    systemImage: "square.and.arrow.up",
-                    action: { showShareSheet = true },
-                    tintColor: .white
-                )
-            }
-
-            Button {
-                coordinator.popToRoot()
-            } label: {
-                Text("Start Over")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-            .padding(.top, 4)
+            saveButton
+            startOverButton
         }
+    }
+
+    private var saveButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            saveToPhotos()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: savedToPhotos ? "checkmark.circle.fill" : "square.and.arrow.down")
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+
+                Text(savedToPhotos ? "Saved!" : "Save to Photos")
+                    .font(.headline)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .padding(.horizontal, 24)
+            .background(
+                LinearGradient(
+                    colors: savedToPhotos
+                        ? [.green.opacity(0.8), .mint.opacity(0.7)]
+                        : [.indigo, .purple],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: 20)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.white.opacity(0.25), lineWidth: 1)
+            )
+            .shadow(color: savedToPhotos ? .green.opacity(0.3) : .purple.opacity(0.4), radius: 16, y: 6)
+            .scaleEffect(isSavePressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSavePressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isSavePressed = true }
+                .onEnded { _ in isSavePressed = false }
+        )
+    }
+
+    private var startOverButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            coordinator.popToRoot()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+
+                Text("Start Over")
+                    .font(.headline)
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .padding(.horizontal, 24)
+            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+            )
+            .scaleEffect(isStartOverPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isStartOverPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isStartOverPressed = true }
+                .onEnded { _ in isStartOverPressed = false }
+        )
     }
 
     // MARK: - Save
@@ -179,20 +219,6 @@ struct FinalResultView: View {
             }
         }
     }
-}
-
-// MARK: - UIActivityViewController Wrapper
-
-/// Bridges `UIActivityViewController` into SwiftUI for sharing images.
-private struct ActivityViewController: UIViewControllerRepresentable {
-
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview

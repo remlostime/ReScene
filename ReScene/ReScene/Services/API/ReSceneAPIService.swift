@@ -68,6 +68,47 @@ final class ReSceneAPIService: ReSceneAPIServiceProtocol {
         return (imageId: decoded.imageId, options: decoded.data.options)
     }
 
+    func chat(
+        imageId: String,
+        message: String,
+        history: [ChatHistoryMessage]
+    ) async throws -> ChatResponseData {
+        let endpoint = settingsService.apiBaseURL
+            .appendingPathComponent("api/chat")
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+
+        let payload = ChatRequest(
+            imageId: imageId,
+            message: message,
+            history: history
+        )
+
+        do {
+            request.httpBody = try JSONEncoder().encode(payload)
+        } catch {
+            throw AppError.decodingError(
+                underlying: "Failed to encode chat request body"
+            )
+        }
+
+        let (data, httpResponse) = try await performRequest(request)
+
+        try validateHTTPStatus(httpResponse, data: data)
+
+        let decoded: ChatResponse
+        do {
+            decoded = try JSONDecoder().decode(ChatResponse.self, from: data)
+        } catch {
+            throw AppError.decodingError(underlying: error.localizedDescription)
+        }
+
+        return decoded.data
+    }
+
     func renderImage(imageId: String, prompt: String) async throws -> URL {
         let endpoint = settingsService.apiBaseURL.appendingPathComponent("api/render")
 
@@ -144,6 +185,12 @@ private struct AnalyzeRequest: Encodable {
     let latitude: Double?
     let longitude: Double?
     let locationName: String?
+}
+
+private struct ChatRequest: Encodable {
+    let imageId: String
+    let message: String
+    let history: [ChatHistoryMessage]
 }
 
 private struct RenderRequest: Encodable {

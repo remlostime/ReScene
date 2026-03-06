@@ -150,6 +150,7 @@ struct ResultView: View {
     // MARK: - Make Your Own
 
     private var makeYourOwnCard: some View {
+        Button { viewModel.showAgentChat() } label: {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
@@ -184,6 +185,8 @@ struct ResultView: View {
                 .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
+        }
+        .buttonStyle(.plain)
         .opacity(cardsAppeared ? 1 : 0)
         .offset(y: cardsAppeared ? 0 : 20)
         .animation(
