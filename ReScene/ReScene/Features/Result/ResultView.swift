@@ -174,7 +174,7 @@ struct ResultView: View {
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.15))
+                .fill(Color.purple.opacity(0.15))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
