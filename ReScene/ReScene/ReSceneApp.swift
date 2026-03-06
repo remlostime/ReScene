@@ -71,6 +71,14 @@ struct ReSceneApp: App {
                             )
                         )
 
+                    case .agentChat:
+                        AgentChatView(
+                            viewModel: AgentChatViewModel(
+                                apiService: coordinator.environment.apiService,
+                                coordinator: coordinator
+                            )
+                        )
+
                     case .finalResult:
                         FinalResultView(coordinator: coordinator)
                     }

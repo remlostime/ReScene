@@ -19,6 +19,7 @@ enum Route: Hashable {
     case vibeDetail
     case rendering
     case finalResult
+    case agentChat
 }
 
 // MARK: - AppCoordinator
@@ -86,6 +87,11 @@ final class AppCoordinator {
     func showFinalResult(renderedImage: UIImage) {
         self.renderedImage = renderedImage
         navigationPath.append(Route.finalResult)
+    }
+
+    /// Transitions to the agent chat screen for freeform scene crafting.
+    func showAgentChat() {
+        navigationPath.append(Route.agentChat)
     }
 
     /// Pops one level back in the navigation stack.

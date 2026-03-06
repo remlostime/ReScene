@@ -62,6 +62,12 @@ final class ResultViewModel {
         coordinator.showVibeDetail(option: option)
     }
 
+    /// Navigates to the agent chat screen for freeform scene crafting.
+    func showAgentChat() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        coordinator.showAgentChat()
+    }
+
     /// Pops back to the previous screen.
     func goBack() {
         coordinator.popToRoot()

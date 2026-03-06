@@ -28,6 +28,24 @@ protocol ReSceneAPIServiceProtocol: Sendable {
         locationName: String?
     ) async throws -> (imageId: String, options: [RemasterOption])
 
+    /// Sends a message to the AI Photography Director chat agent.
+    ///
+    /// The backend is stateless -- the full conversation `history` must be
+    /// passed with every request. The response is either a clarifying question
+    /// (`chat_reply`) or an actionable rendering proposal (`proposal_card`).
+    ///
+    /// - Parameters:
+    ///   - imageId: The UUID returned from `analyzeImage`, referencing the server-side image.
+    ///   - message: The user's latest message to the agent.
+    ///   - history: The full previous conversation. Pass `[]` for the first message.
+    /// - Throws: `AppError` variants for network, decoding, or server-side failures.
+    /// - Returns: The agent's response data, potentially including a `ChatProposal`.
+    func chat(
+        imageId: String,
+        message: String,
+        history: [ChatHistoryMessage]
+    ) async throws -> ChatResponseData
+
     /// Renders a previously uploaded image with the selected style prompt.
     ///
     /// - Parameters:

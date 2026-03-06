@@ -20,6 +20,12 @@ final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
     /// Simulated network latency for the render call.
     var simulatedRenderDelay: Duration = .seconds(5)
 
+    /// Simulated network latency for the chat call.
+    var simulatedChatDelay: Duration = .seconds(1.5)
+
+    /// Tracks chat call count to alternate between reply and proposal.
+    private var chatCallCount = 0
+
     // MARK: - ReSceneAPIServiceProtocol
 
     func analyzeImage(
@@ -53,6 +59,42 @@ final class MockReSceneAPIService: ReSceneAPIServiceProtocol {
         ]
 
         return (imageId: "mock-\(UUID().uuidString)", options: options)
+    }
+
+    func chat(
+        imageId: String,
+        message: String,
+        history: [ChatHistoryMessage]
+    ) async throws -> ChatResponseData {
+        if shouldFail {
+            throw AppError.serverError(message: "Mock chat failure")
+        }
+
+        try await Task.sleep(for: simulatedChatDelay)
+
+        chatCallCount += 1
+
+        if chatCallCount % 3 == 0 {
+            return ChatResponseData(
+                type: "proposal_card",
+                text: "好的！根据你的描述，我为你准备了一个方案：",
+                proposal: ChatProposal(
+                    title: "Cyberpunk Neon Rain",
+                    description: "将照片转变为充满赛博朋克风格的霓虹雨夜，"
+                        + "霓虹灯光在湿润的地面上反射出迷幻色彩。",
+                    nanoPrompt: "Transform the background into a "
+                        + "cyberpunk night scene with neon rain."
+                )
+            )
+        }
+
+        let replies = [
+            "你是想要赛博朋克霓虹风，还是复古胶片的酷感？",
+            "明白了！你希望保留原始色调，还是完全重新调色？"
+        ]
+        let reply = replies[(chatCallCount - 1) % replies.count]
+
+        return ChatResponseData(type: "chat_reply", text: reply, proposal: nil)
     }
 
     func renderImage(imageId: String, prompt: String) async throws -> URL {
