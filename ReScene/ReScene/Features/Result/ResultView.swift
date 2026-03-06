@@ -6,8 +6,8 @@
 import CoreLocation
 import SwiftUI
 
-/// Displays the original photo alongside three AI-generated remastering
-/// options in a vertically scrollable, premium selection UI.
+/// Displays the original photo alongside AI-generated remastering
+/// options in a horizontal grid selection UI.
 struct ResultView: View {
 
     @Bindable var viewModel: ResultViewModel
@@ -22,15 +22,27 @@ struct ResultView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 28) {
                     headerSection
+                        .padding(.horizontal, 20)
                     originalPhotoSection
+                        .padding(.horizontal, 20)
                     optionsSection
-                    actionSection
                 }
-                .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.goBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .navigationBar)
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 imageScale = 1.0
@@ -112,46 +124,27 @@ struct ResultView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.white.opacity(0.5))
                 .tracking(1.5)
+                .padding(.horizontal, 20)
 
-            ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
-                OptionCard(
-                    option: option,
-                    isSelected: viewModel.selectedOption == option,
-                    onSelect: { viewModel.selectOption(option) }
-                )
-                .opacity(cardsAppeared ? 1 : 0)
-                .offset(y: cardsAppeared ? 0 : 30)
-                .animation(
-                    .spring(response: 0.5, dampingFraction: 0.7)
-                        .delay(Double(index) * 0.12),
-                    value: cardsAppeared
-                )
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(Array(viewModel.options.enumerated()), id: \.element.id) { index, option in
+                        VibeGridCard(
+                            option: option,
+                            onTap: { viewModel.showVibeDetail(option: option) }
+                        )
+                        .opacity(cardsAppeared ? 1 : 0)
+                        .offset(y: cardsAppeared ? 0 : 20)
+                        .animation(
+                            .spring(response: 0.5, dampingFraction: 0.7)
+                                .delay(Double(index) * 0.12),
+                            value: cardsAppeared
+                        )
+                    }
+                }
+                .padding(.horizontal, 20)
             }
         }
-    }
-
-    // MARK: - Actions
-
-    private var actionSection: some View {
-        VStack(spacing: 12) {
-            GlassButton(
-                title: "Apply This Vibe",
-                systemImage: "wand.and.stars",
-                action: { viewModel.proceedToRendering() },
-                tintColor: .white,
-                isEnabled: viewModel.canProceed
-            )
-
-            Button {
-                viewModel.startOver()
-            } label: {
-                Text("Start Over")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-        }
-        .padding(.top, 8)
-        .padding(.bottom, 24)
     }
 }
 
@@ -187,7 +180,9 @@ struct ResultView: View {
         ]
     )
 
-    ResultView(
-        viewModel: ResultViewModel(result: mockResult, coordinator: coordinator)
-    )
+    NavigationStack {
+        ResultView(
+            viewModel: ResultViewModel(result: mockResult, coordinator: coordinator)
+        )
+    }
 }

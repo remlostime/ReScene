@@ -7,15 +7,10 @@ import CoreLocation
 import Observation
 import UIKit
 
-/// Drives the result screen, exposing the original photo and three
-/// AI-generated remastering options for display and selection.
+/// Drives the result screen, exposing the original photo and
+/// AI-generated remastering options for display in a horizontal grid.
 @Observable
 final class ResultViewModel {
-
-    // MARK: - Published State
-
-    /// The option the user has tapped, if any.
-    var selectedOption: RemasterOption?
 
     // MARK: - Dependencies
 
@@ -47,32 +42,21 @@ final class ResultViewModel {
         return nil
     }
 
-    /// The three remastering options.
+    /// The remastering options.
     var options: [RemasterOption] {
         result.options
     }
 
-    /// Whether a vibe is selected and the user can proceed to rendering.
-    var canProceed: Bool {
-        selectedOption != nil
-    }
-
     // MARK: - Actions
 
-    /// Selects a remastering option by reference.
-    func selectOption(_ option: RemasterOption) {
-        selectedOption = option
+    /// Navigates to the vibe detail screen for the given option.
+    func showVibeDetail(option: RemasterOption) {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        coordinator.showVibeDetail(option: option)
     }
 
-    /// Navigates to the rendering screen with the currently selected option.
-    func proceedToRendering() {
-        guard let option = selectedOption else { return }
-        coordinator.startRendering(option: option)
-    }
-
-    /// Returns to the home screen to start a new session.
-    func startOver() {
-        coordinator.popToRoot()
+    /// Pops back to the previous screen.
+    func goBack() {
+        coordinator.pop()
     }
 }

@@ -52,6 +52,16 @@ struct ReSceneApp: App {
                             )
                         }
 
+                    case .vibeDetail:
+                        if let option = coordinator.selectedOption,
+                           let result = coordinator.analysisResult {
+                            VibeDetailView(
+                                option: option,
+                                originalImage: result.originalPhoto.uiImage,
+                                coordinator: coordinator
+                            )
+                        }
+
                     case .rendering:
                         RenderingView(
                             viewModel: RenderingViewModel(
