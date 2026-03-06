@@ -86,6 +86,9 @@ final class AppCoordinator {
     /// Transitions to the final result screen after the rendered image is ready.
     func showFinalResult(renderedImage: UIImage) {
         self.renderedImage = renderedImage
+        if !navigationPath.isEmpty {
+            navigationPath.removeLast()
+        }
         navigationPath.append(Route.finalResult)
     }
 
