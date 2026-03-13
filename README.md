@@ -46,12 +46,15 @@ ReScene is a native iOS app (Swift / SwiftUI) that lets users upload a photo, re
 └──────────────┬──────────────────────────────────────────┘
                │ HTTPS
                ▼
-┌──────────────────────────┐
-│   Fastify Backend (AI)   │
-│  /api/analyze            │
-│  /api/render             │
-│  /api/chat               │
-└──────────────────────────┘
+┌──────────────────────────────────────────────┐
+│          Fastify Backend (AI)                │
+│          /api/analyze · /api/render · /api/chat  │
+│                                              │
+│  ┌─────────────────┐  ┌──────────────────┐   │
+│  │ Google Cloud Run │  │ AWS App Runner   │   │
+│  │ (default)        │  │ (alternative)    │   │
+│  └─────────────────┘  └──────────────────┘   │
+└──────────────────────────────────────────────┘
 ```
 
 The app follows **MVVM + Coordinator** with **protocol-based dependency injection**. Every service has a protocol, a live implementation, and a mock — making the entire app previewable and testable without hitting the network.
@@ -114,7 +117,7 @@ ReScene/
 │   │   ├── SettingsServiceProtocol.swift      # Contract: apiEnvironment, apiBaseURL
 │   │   ├── SettingsService.swift              # UserDefaults-backed persistence
 │   │   ├── MockSettingsService.swift          # In-memory for previews
-│   │   └── APIEnvironment.swift               # dev (localhost:8080) / prod enum
+│   │   └── APIEnvironment.swift               # dev / google / aws environment enum
 │   ├── PhotoPicker/
 │   │   ├── PhotoPickerServiceProtocol.swift   # Contract: loadPhoto(from:)
 │   │   ├── PhotoPickerService.swift           # ImageIO EXIF GPS extraction
@@ -218,7 +221,7 @@ Reverse-geocodes a `CLLocationCoordinate2D` into a human-readable place name (e.
 
 ### Settings Service (`SettingsServiceProtocol`)
 
-Persists the active `APIEnvironment` (dev / prod) in `UserDefaults`. Exposes the resolved `apiBaseURL` used by the API service.
+Persists the active `APIEnvironment` (dev / google / aws) in `UserDefaults`. Exposes the resolved `apiBaseURL` used by the API service. Defaults to `.google` on first launch.
 
 ---
 
@@ -268,7 +271,7 @@ Persists the active `APIEnvironment` (dev / prod) in `UserDefaults`. Exposes the
 ### Dev Settings (`DevSettingsView` + `DevSettingsViewModel`) — DEBUG only
 
 - Shake the device to open.
-- Switch between `dev` (localhost:8080) and `prod` API environments.
+- Switch between `dev` (localhost:8080), `google` (Cloud Run), and `aws` (App Runner) environments.
 - Persists the change and prompts for an app restart.
 
 ---
@@ -337,12 +340,15 @@ The app entry point (`ReSceneApp.swift`) creates `AppEnvironment.live()` and pas
 
 ## API Contract
 
-All endpoints live on the Fastify backend. Base URLs:
+All endpoints live on the Fastify backend. The app supports three environments (configurable at runtime via Dev Settings):
 
-| Environment | URL |
-|-------------|-----|
-| **prod** | `https://rescene-api-568316754281.us-west1.run.app` |
-| **dev** | `http://localhost:8080` |
+| Environment | Provider | URL |
+|-------------|----------|-----|
+| **google** (default) | Google Cloud Run | `https://rescene-api-568316754281.us-west1.run.app` |
+| **aws** | AWS App Runner | `https://twybjyvj4w.us-east-1.awsapprunner.com` |
+| **dev** | Local | `http://localhost:8080` |
+
+Both the Google Cloud Run and AWS App Runner deployments expose the same API contract — you can switch between them freely in Dev Settings.
 
 ### `POST /api/analyze`
 
@@ -454,7 +460,7 @@ Multi-turn conversation with the AI Photography Director.
 
 In **DEBUG** builds only:
 
-- **Shake to open Dev Settings** — `ShakeDetector` intercepts device shake gestures and presents a sheet where you can toggle between `dev` and `prod` API environments.
+- **Shake to open Dev Settings** — `ShakeDetector` intercepts device shake gestures and presents a sheet where you can toggle between `dev`, `google`, and `aws` API environments.
 - **Mock environment** — Switch `AppEnvironment.live()` to `.mock()` in `ReSceneApp.swift` to run the entire app against fake data with simulated network delays.
 
 ---
@@ -494,4 +500,4 @@ This wires all services to in-memory mocks with simulated delays — no backend 
 
 ### Switch API Environment at Runtime
 
-On a **DEBUG** build, shake the device (or Ctrl+Cmd+Z in Simulator) to open Dev Settings and toggle between `dev` / `prod` endpoints.
+On a **DEBUG** build, shake the device (or Ctrl+Cmd+Z in Simulator) to open Dev Settings and toggle between `dev` / `google` / `aws` endpoints.
