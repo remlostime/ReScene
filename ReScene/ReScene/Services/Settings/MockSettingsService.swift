@@ -10,7 +10,7 @@ import Observation
 @Observable
 final class MockSettingsService: SettingsServiceProtocol, @unchecked Sendable {
 
-    var apiEnvironment: APIEnvironment = .prod
+    var apiEnvironment: APIEnvironment = .google
 
     var apiBaseURL: URL {
         apiEnvironment.baseURL

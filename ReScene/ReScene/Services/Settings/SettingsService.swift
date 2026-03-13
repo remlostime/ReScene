@@ -34,7 +34,7 @@ final class SettingsService: SettingsServiceProtocol, @unchecked Sendable {
            let env = APIEnvironment(rawValue: stored) {
             self.apiEnvironment = env
         } else {
-            self.apiEnvironment = .prod
+            self.apiEnvironment = .google
         }
     }
 }
